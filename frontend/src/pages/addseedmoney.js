@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-
+import { useFaculty } from "./facultyContext";
+import { useNavigate } from "react-router-dom";
 function SeedMoneyPage() {
+  const {faculty_id} = useFaculty();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     financialYear: '',
     facultyName: '',
     department: '',
-    numStudents: 0,
+    numStudents: '',
     projectTitle: '',
     amountSanctioned: '',
     amountReceived: '',
@@ -55,7 +58,7 @@ function SeedMoneyPage() {
     // Validate fields based on the regular expressions
     Object.keys(formData).forEach((key) => {
       if (validations[key] && formData[key] && !validations[key].test(formData[key])) {
-        switch(key) {
+        switch (key) {
           case 'facultyName':
             newErrors[key] = 'Faculty name should contain only letters.';
             break;
@@ -89,48 +92,104 @@ function SeedMoneyPage() {
     // Validate students details
     formData.students.forEach((student, index) => {
       if (!validations.registration.test(student.registration)) {
-        newErrors['registration-${index}'] = 'Registration Number (Student ${index + 1}) is invalid.';
+        newErrors[`registration-${index}`] = `Registration Number (Student ${index + 1}) is invalid.`;
       }
       if (!validations.department.test(student.name)) {
-        newErrors['name-${index}'] = 'Name (Student ${index + 1}) is invalid.';
+        newErrors[`name-${index}`] = `Name (Student ${index + 1}) is invalid.`;
       }
     });
+
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
   };
 
-
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (validateForm()) {
-      // Form is valid, proceed with submission logic here.
-      console.log('Form submitted', formData);
-      alert("Form submitted successfully!");
-      setFormData({
-        financialYear: '',
-        facultyName: '',
-        department: '',
-        numStudents: 0,
-        projectTitle: '',
-        amountSanctioned: '',
-        amountReceived: '',
-        objectives: '',
-        outcomes: '',
-        proof: null,
-        students: [{ registration: '', name: '' }]
-      });
+        // Form is valid, prepare the data to be sent
+        const formDataToSend = new FormData();
+        formDataToSend.append('faculty_id', faculty_id); // Add faculty_id from context
+        formDataToSend.append('financialYear', formData.financialYear);
+        formDataToSend.append('facultyName', formData.facultyName);
+        formDataToSend.append('department', formData.department);
+        formDataToSend.append('numStudents', formData.numStudents);
+        formDataToSend.append('projectTitle', formData.projectTitle);
+        formDataToSend.append('amountSanctioned', formData.amountSanctioned);
+        formDataToSend.append('amountReceived', formData.amountReceived);
+        formDataToSend.append('objectives', formData.objectives);
+        formDataToSend.append('outcomes', formData.outcomes);
+
+        // Handle file upload only if 'proof' is provided
+        if (formData.proof) {
+            formDataToSend.append('proof', formData.proof);  // Ensure this is a File object
+        }
+
+        // Handle students dynamically (if there are multiple students)
+        formData.students.forEach((student, index) => {
+            formDataToSend.append(`students[${index}][registration]`, student.registration);
+            formDataToSend.append(`students[${index}][name]`, student.name);
+        });
+
+        try {
+            // Send form data to backend (server)
+            const response = await fetch('http://localhost:5002/addSeedMoney', {
+                method: 'POST',
+                body: formDataToSend,  // Send FormData instead of JSON
+            });
+
+            // Check the response content type
+            const contentType = response.headers.get('Content-Type');
+            let data;
+
+            // If the response is JSON, parse it
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();  // Parse response as JSON
+            } else {
+                // Handle plain text or other response types
+                data = await response.text();  // Read the response as plain text
+            }
+
+            if (response.ok) {
+                alert(data.message || data); // Show success message or the text response
+
+                if (data.message === 'Form submitted successfully!') {
+                    // Reset the form after successful submission
+                    setFormData({
+                        financialYear: '',
+                        facultyName: '',
+                        department: '',
+                        numStudents: 0,
+                        projectTitle: '',
+                        amountSanctioned: '',
+                        amountReceived: '',
+                        objectives: '',
+                        outcomes: '',
+                        proof: null,
+                        students: [{ registration: '', name: '' }]
+                    });
+                }
+                if(response.status===200){
+                  navigate("/viewseedmoney");
+                }
+            } else {
+                console.error('Error:', data);
+                alert('Failed to submit the form: ' + (data.message || data));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to submit the form due to network issues');
+        }
     } else {
-      // Scroll to the first error field
-      const firstErrorField = Object.keys(errors)[0];
-      const errorField = document.querySelector('[name=${firstErrorField}]');
-      if (errorField) {
-        errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+        // If form is invalid, scroll to the first error field
+        const firstErrorField = Object.keys(errors)[0];
+        const errorField = document.querySelector(`[name=${firstErrorField}]`);
+        if (errorField) {
+            errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
-  };
+};
 
 
   return (

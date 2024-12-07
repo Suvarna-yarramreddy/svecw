@@ -2,15 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useFaculty } from "./facultyContext";
 
 const PatentsPage = () => {
-    const [Patents, setPatents] = useState([]);
+    const [patents, setPatents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { faculty_id } = useFaculty();
-
-    const bufferToBase64 = (buffer) => {
-        const binaryString = String.fromCharCode.apply(null, new Uint8Array(buffer));
-        return btoa(binaryString);
-    };
 
     useEffect(() => {
         const fetchPatents = async () => {
@@ -20,24 +15,13 @@ const PatentsPage = () => {
                 if (!response.ok) {
                     const errorText = await response.text();
                     setError(errorText);
-                    throw new Error('Failed to fetch Patents');
+                    throw new Error('Failed to fetch patents');
                 }
 
                 const data = await response.json();
-                data.forEach((pat) => {
-                    if (pat.proofOfPatent) {
-                        try {
-                            const buffer = new Uint8Array(pat.proofOfPatent);
-                            const mimeType = 'application/pdf'; // For now, assuming it's a PDF
-                            pat.proofOfPatent = `data:${mimeType};base64,${bufferToBase64(buffer)}`;
-                        } catch (error) {
-                            console.error('Error processing proofOfPatent:', error);
-                        }
-                    }
-                });
-
                 setPatents(data);
             } catch (error) {
+                console.error("Error fetching patents:", error);
                 setError("Error fetching patents.");
             } finally {
                 setLoading(false);
@@ -50,14 +34,13 @@ const PatentsPage = () => {
     if (loading) return <p>Loading...</p>;
     if (error) return <p>{error}</p>;
 
-
     return (
         <div style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
             <h1 style={{ textAlign: 'center', color: '#333', marginBottom: '30px', fontSize: '28px', fontWeight: 'bold' }}>Your Patents</h1>
 
-            {Patents.length > 0 ? (
+            {patents.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
-                    {Patents.map(pat => (
+                    {patents.map(pat => (
                         <div
                             key={pat.patent_id}
                             style={{
@@ -71,105 +54,47 @@ const PatentsPage = () => {
                             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
                             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                            {pat.category && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Nature of Application:</span> {pat.category}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.iprType && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Type of Application:</span> {pat.iprType}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.applicationNumber && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Application Number:</span> {pat.applicationNumber}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.applicantName && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Applicant Name:</span> {pat.applicantName}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.department && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Department:</span> {pat.department}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.filingDate && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Filing Date:</span> {pat.filingDate}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.inventionTitle && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Invention Title:</span> {pat.inventionTitle}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.numOfInventors !== null && pat.numOfInventors !== undefined && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Number of Inventors:</span> {pat.numOfInventors}
-                                    </p>
-                                </div>
-                            )}
-
-                            <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                <span style={{ color: '#333' }}>Inventors:</span> 
-                                {Array.isArray(pat.inventors) ? pat.inventors.join(', ') : 'No Inventors Available'}
-                            </p>
-
-                            {pat.status && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Status:</span> {pat.status}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.dateOfPublished && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Date of Publication:</span> {pat.dateOfPublished}
-                                    </p>
-                                </div>
-                            )}
-                            {pat.dateOfGranted && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-                                    <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-                                        <span style={{ color: '#333' }}>Date of Grant:</span> {pat.dateOfGranted}
-                                    </p>
-                                </div>
-                            )}
+                            <p><strong>Nature of Application:</strong> {pat.category || "N/A"}</p>
+                            <p><strong>Type of Application:</strong> {pat.iprType || "N/A"}</p>
+                            <p><strong>Application Number:</strong> {pat.applicationNumber || "N/A"}</p>
+                            <p><strong>Applicant Name:</strong> {pat.applicantName || "N/A"}</p>
+                            <p><strong>Department:</strong> {pat.department || "N/A"}</p>
+                            <p><strong>Filing Date:</strong> {pat.filingDate || "N/A"}</p>
+                            <p><strong>Invention Title:</strong> {pat.inventionTitle || "N/A"}</p>
+                            <p><strong>Number of Inventors:</strong> {pat.numOfInventors || "N/A"}</p>
+                            <p><strong>Inventors:</strong> {pat.inventors || "N/A"}</p>
+                            <p><strong>Status:</strong> {pat.status || "N/A"}</p>
+                            <p><strong>Date of Publication:</strong> {pat.dateOfPublished || "N/A"}</p>
+                            <p><strong>Date of Grant:</strong> {pat.dateOfGranted || "N/A"}</p>
                             {pat.proofOfPatent && (
-    <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '15px' }}>
-        <p style={{ flex: '1 1 45%', fontWeight: 'normal', color: '#555', fontSize: '16px' }}>
-            <span style={{ color: '#333' }}>Proof of Patent:</span>
-            <a
-                href={pat.proofOfPatent}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#007bff' }}
-            >
-                View Proof
-            </a>
-        </p>
-    </div>
-)}
-
+                                <div>
+                                    <strong>Proof of Patent:</strong>
+                                    {pat.proofOfPatent.startsWith('data:image/') ? (
+                                        <img 
+                                            src={pat.proofOfPatent} 
+                                            alt="Proof of Patent" 
+                                            style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }} 
+                                        />
+                                    ) : pat.proofOfPatent.startsWith('data:application/pdf') ? (
+                                        <iframe
+                                            src={pat.proofOfPatent}
+                                            width="100%"
+                                            height="500px"
+                                            style={{ border: 'none' }}
+                                            title="Proof of Patent PDF"
+                                        ></iframe>
+                                    ) : (
+                                        <a
+                                            href={pat.proofOfPatent}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: '#007bff' }}
+                                        >
+                                            View Proof
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

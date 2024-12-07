@@ -12,6 +12,7 @@ import PublicationPage from './pages/addpublication';
 import  SeedMoneyPage from './pages/addseedmoney';
 import PublicationsPage from './pages/viewpublications';
 import PatentForm from './pages/viewpatents';
+import ViewSeedMoney from './pages/viewseedmoney';
 const App = () => {
   return (
     <Router>
@@ -27,6 +28,7 @@ const App = () => {
           <Route path="/addseedmoney" element={<SeedMoneyPage/>}/>
           <Route path="/viewpublications" element={<PublicationsPage/>}/>
           <Route path="/viewpatents" element={<PatentForm/>}/>
+          <Route path="/viewseedmoney" element={<ViewSeedMoney/>}/>
           {/* Add more routes as necessary */}
         </Routes>
       </Layout>

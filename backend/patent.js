@@ -100,37 +100,36 @@ app.post("/addPatent", upload.single('proofOfPatent'), (req, res) => {
 });
 
 
-// Route to fetch patents for a faculty member
-app.get("/getPatents/:faculty_id", (req, res) => {
-    const facultyId = req.params.faculty_id;
+app.get('/getPatents/:faculty_id', (req, res) => {
+    const faculty_id = req.params.faculty_id;
 
-    // SQL query to fetch patents for the given faculty_id
+    // Query to fetch all patents for the specified faculty_id
     const query = `SELECT * FROM patents WHERE faculty_id = ?`;
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-    db.query(query, [facultyId], (err, results) => {
+    db.query(query, [faculty_id], (err, results) => {
         if (err) {
-            return res.status(500).send("Error fetching patents.");
+            console.error("Database error:", err);  // Log the full error for debugging
+            return res.status(500).send('Error fetching patents.');
         }
 
-        const patentsWithBase64 = results.map(pat => {
-            // If proofOfPatent is available, convert it to Base64
-            if (pat.proofOfPatent) {
-                try {
-                    const filePath = path.join(__dirname, pat.proofOfPatent); // Assuming the path is stored in the DB
-                    const fileBuffer = fs.readFileSync(filePath); // Read the file into a buffer
-                    const base64String = `data:application/pdf;base64,${fileBuffer.toString('base64')}`; // Convert to Base64 string
-                    pat.proofOfPatent = base64String; // Assign Base64 string to proofOfPatent
-                } catch (error) {
-                    console.error("Error processing proofOfPatent:", error);
-                }
+        if (!results || results.length === 0) {
+            console.log("No patents found for faculty_id:", faculty_id);  // Log if no results
+            return res.status(404).send('No patents found for this faculty.');
+        }
+
+        // Update proofOfPatent to include the public URL for file access
+        results.forEach(patent => {
+            if (patent.proofOfPatent) {
+                patent.proofOfPatent = `http://localhost:5001/${patent.proofOfPatent.replace(/\\/g, '/')}`;
             }
-            return pat;
         });
 
-        // Send the processed patents data with Base64 encoded file
-        res.json(patentsWithBase64);
+        console.log("Patents found:", results); // Log the results before sending
+        res.json(results);
     });
 });
+
 
 
 // Start the server
